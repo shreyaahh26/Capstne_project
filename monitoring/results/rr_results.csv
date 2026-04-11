@@ -1,0 +1,11 @@
+task_id,type,complexity,worker,strategy,latency_s,status,reason,timestamp
+task-0001,normal,0.1459,worker-2,round_robin,0.1218,completed,,2026-04-11T13:36:20.567570+00:00
+task-0002,normal,0.0538,worker-3,round_robin,0.0613,completed,,2026-04-11T13:36:20.782808+00:00
+task-0003,normal,0.0913,worker-1,round_robin,0.109,completed,,2026-04-11T13:36:21.047289+00:00
+task-0004,normal,0.0835,worker-2,round_robin,0.1,completed,,2026-04-11T13:36:21.303984+00:00
+task-0005,normal,0.1605,worker-3,round_robin,0.1572,completed,,2026-04-11T13:36:21.599020+00:00
+task-0006,normal,0.1515,worker-1,round_robin,0.1257,completed,,2026-04-11T13:36:21.873630+00:00
+task-0007,normal,0.1838,worker-2,round_robin,0.1519,completed,,2026-04-11T13:36:22.180598+00:00
+task-0008,normal,0.063,worker-3,round_robin,0.0752,completed,,2026-04-11T13:36:22.401219+00:00
+task-0009,normal,0.1133,worker-1,round_robin,0.1016,completed,,2026-04-11T13:36:22.660899+00:00
+task-0010,normal,0.0545,worker-2,round_robin,0.0623,completed,,2026-04-11T13:36:22.883153+00:00
