@@ -11,6 +11,36 @@ This project is a framework design and an evaluation of the distributed resource
 
 ## System Architecture
 
+## Scheduling Strategies Implemented
+
+| Strategy | Description | Best For |
+|----------|-------------|---------|
+| Static Allocation | Always assigns to worker-1 (baseline) | Simple, predictable workloads |
+| Round Robin | Cycles through workers in order | Uniform task distribution |
+| Least Loaded | Assigns to worker with lowest CPU load | Dynamic, bursty workloads |
+| Fairness Based | Prioritises workers with fewer total tasks | Long-running equal workloads |
+
+## Workload Scenarios
+
+| Scenario | Description | Context |
+|----------|-------------|---------|
+| Normal Workload | Steady stream of tasks at regular intervals | Regular Woolworths trading day |
+| Burst Workload | Sudden spike of tasks followed by normal load | Woolworths Click Frenzy flash sale |
+| Node Failure | Worker node fails mid-execution and recovers | Server crash during peak traffic |
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Language | Python 3.x |
+| Scheduler | Custom HTTP service (http.server) |
+| Worker Nodes | Custom HTTP service (ThreadingHTTPServer) |
+| Communication | HTTP REST API (JSON) |
+| Cloud Infrastructure | Microsoft Azure VMs (planned) |
+| Version Control | GitHub |
+| Results Dashboard | Microsoft Excel |
+
+
 ## Simulation Results Summary
 
 | Strategy | Avg Latency | Throughput | Tasks Completed |
