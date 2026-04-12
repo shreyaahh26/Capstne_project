@@ -113,7 +113,7 @@ python workload_simulation.py --scheduler-url http://127.0.0.1:9000 --scenario c
 ## Project Milestones
 
 | Week | Milestone | Status |
-|------|-----------|--------|
+|------|-----------|--------| 
 | 1-2 | Team formation and project selection | Complete |
 | 3-4 | Project proposal submission | Complete |
 | 5-6 | GitHub setup, code implementation, simulations | Complete |
