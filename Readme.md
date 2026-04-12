@@ -35,3 +35,35 @@ This project is a framework design and an evaluation of the distributed resource
 | 10-12 | Performance evaluation and comparison | Planned |
 | 13 | Final report and presentation | Planned |
 
+## How to Run Locally
+
+### Step 1 — Start Worker Nodes (open 3 separate terminals)
+
+```bash
+python worker.py --id worker-1 --port 8001
+python worker.py --id worker-2 --port 8002
+python worker.py --id worker-3 --port 8003
+```
+
+### Step 2 — Start the Scheduler
+
+```bash
+python scheduler.py --port 9000
+```
+
+### Step 3 — Run Simulations
+
+```bash
+# Normal workload
+python workload_simulation.py --scheduler-url http://127.0.0.1:9000 --scenario normal --strategy round_robin
+
+# Burst workload
+python workload_simulation.py --scheduler-url http://127.0.0.1:9000 --scenario burst --strategy least_loaded --output burst_results.csv
+
+# Node failure scenario
+python workload_simulation.py --scheduler-url http://127.0.0.1:9000 --scenario failure --strategy round_robin --output failure_results.csv
+
+# Compare all strategies
+python workload_simulation.py --scheduler-url http://127.0.0.1:9000 --scenario compare --output all_results.csv
+```
+
