@@ -35,11 +35,3 @@ This project is a framework design and an evaluation of the distributed resource
 | 10-12 | Performance evaluation and comparison | Planned |
 | 13 | Final report and presentation | Planned |
 
-## References
-Burns, B., Grant, B., Oppenheimer, D., Brewer, E. and Wilkes, J. (2016) 'Borg, Omega, and Kubernetes', Communications of the ACM, vol. 59, no. 5, pp. 50–57. Available at: https://doi.org/10.1145/2890784
-
-Luo, Q., Li, C., Huang, T. and Liu, Y. (2021) 'Resource Scheduling in Edge Computing: A Survey', IEEE Communications Surveys and Tutorials, vol. 23, no. 4, pp. 2131–2165. Available at: https://ieeexplore.ieee.org/document/9511316
-
-Chen, Z., Hu, J. and Min, G. (2022) 'Optimal Resource Scheduling and Allocation in Distributed Computing Systems', IEEE Conference Publication. Available at: https://ieeexplore.ieee.org/document/9867340
-
-Verma, A., Pedrosa, L., Korupolu, M., Oppenheimer, D., Tune, E. and Wilkes, J. (2015) 'Large-scale cluster management at Google with Borg', Proceedings of EuroSys 2015. Available at: https://doi.org/10.1145/2741948.2741964
