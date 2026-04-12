@@ -6,7 +6,7 @@ This project is a framework design and an evaluation of the distributed resource
 
 ## Team Members
 
-| Name | Role | Responsibility |
+| Name | Role | Responsibility | 
 |------|------|---------------|
 | Shreya Gopala | Project Manager & Quality Lead | Planning, coordination, documentation, Excel dashboard |
 | Kush | System Architect & Technical Lead | System design, Azure infrastructure, architecture diagrams |
