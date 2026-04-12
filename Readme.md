@@ -11,26 +11,26 @@ This project is a framework design and an evaluation of the distributed resource
 
 # System Architecture
 
-''' text
-Woolworths Online Platform (Client Requests)
-                    │
-                    ▼
-        ┌─────────────────────┐
-        │   Central Scheduler  │  ← scheduler.py (Port 9000)
-        └──────────┬──────────┘
-                   │
-        ┌──────────┼──────────┐
-        ▼          ▼          ▼
-  ┌──────────┐ ┌──────────┐ ┌──────────┐
-  │ worker-1  │ │ worker-2  │ │ worker-3  │
-  │ Port 8001 │ │ Port 8002 │ │ Port 8003 │
-  └──────────┘ └──────────┘ └──────────┘
-                   │
-        ┌──────────▼──────────┐
-        │    Azure Monitor     │
-        └──────────┬──────────┘
-                   │
-        ┌──────────▼──────────┐
-        │   Excel Dashboard    │
-        └─────────────────────┘
-'''
+## Simulation Results Summary
+
+| Strategy | Avg Latency | Throughput | Tasks Completed |
+|----------|------------|-----------|----------------|
+| Static | 0.111s | 9.01 tasks/s | 10/10 |
+| Round Robin | 0.107s | 9.38 tasks/s | 10/10 |
+| Least Loaded | 0.108s | 9.22 tasks/s | 10/10 |
+| Fairness | 0.110s | 9.06 tasks/s | 10/10 |
+| Burst (Least Loaded) | 0.254s | 3.94 tasks/s | 20/20 |
+| Node Failure (Round Robin) | 0.110s | 9.12 tasks/s | 10/10 |
+
+## Project Milestones
+
+| Week | Milestone | Status |
+|------|-----------|--------|
+| 1–4 | Team formation and proposal submission | Complete |
+| 5–6 | GitHub setup, code implementation, simulations | Complete |
+| 7–8 | Azure deployment, Excel dashboard | In Progress |
+| 9 | Progress Report 2 | Planned |
+| 10–12 | Performance evaluation | Planned |
+| 13 | Final report and presentation | Planned |
+
+## References
