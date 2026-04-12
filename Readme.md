@@ -24,13 +24,17 @@ This project is a framework design and an evaluation of the distributed resource
 
 ## Project Milestones
 
+## Project Milestones
+
 | Week | Milestone | Status |
 |------|-----------|--------|
-| 1–4 | Team formation and proposal submission | Complete |
-| 5–6 | GitHub setup, code implementation, simulations | Complete |
-| 7–8 | Azure deployment, Excel dashboard | In Progress |
-| 9 | Progress Report 2 | Planned |
-| 10–12 | Performance evaluation | Planned |
+| 1-2 | Team formation and project selection | Complete |
+| 3-4 | Project proposal submission | Complete |
+| 5-6 | GitHub setup, code implementation, simulations | Complete |
+| 6 | Progress Report 1 submission | Complete |
+| 7-8 | Azure deployment, Excel dashboard | In Progress |
+| 9 | Progress Report 2 submission | Planned |
+| 10-12 | Performance evaluation and comparison | Planned |
 | 13 | Final report and presentation | Planned |
 
 ## References
