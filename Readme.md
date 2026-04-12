@@ -81,7 +81,7 @@ Woolworths Online Platform (Client Requests)
 
 ## How to Run Locally
 
-### Step 1 — Start Worker Nodes (open 3 separate terminals)
+### Step 1 - Start Worker Nodes (open 3 separate terminals)
 
 ```bash
 python worker.py --id worker-1 --port 8001
@@ -89,13 +89,13 @@ python worker.py --id worker-2 --port 8002
 python worker.py --id worker-3 --port 8003
 ```
 
-### Step 2 — Start the Scheduler
+### Step 2 - Start the Scheduler
 
 ```bash
 python scheduler.py --port 9000
 ```
 
-### Step 3 — Run Simulations
+### Step 3 - Run Simulations
 
 ```bash
 # Normal workload
