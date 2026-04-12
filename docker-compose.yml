@@ -1,4 +1,4 @@
-```yaml
+yaml
 version: "3.9"
 
 services:
@@ -50,4 +50,4 @@ services:
 networks:
   distributed-net:
     driver: bridge
-```
+
