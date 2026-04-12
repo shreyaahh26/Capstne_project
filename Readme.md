@@ -22,19 +22,6 @@ This project is a framework design and an evaluation of the distributed resource
 | Burst (Least Loaded) | 0.254s | 3.94 tasks/s | 20/20 |
 | Node Failure (Round Robin) | 0.110s | 9.12 tasks/s | 10/10 |
 
-## Project Milestones
-
-| Week | Milestone | Status |
-|------|-----------|--------|
-| 1-2 | Team formation and project selection | Complete |
-| 3-4 | Project proposal submission | Complete |
-| 5-6 | GitHub setup, code implementation, simulations | Complete |
-| 6 | Progress Report 1 submission | Complete |
-| 7-8 | Azure deployment, Excel dashboard | In Progress |
-| 9 | Progress Report 2 submission | Planned |
-| 10-12 | Performance evaluation and comparison | Planned |
-| 13 | Final report and presentation | Planned |
-
 ## How to Run Locally
 
 ### Step 1 — Start Worker Nodes (open 3 separate terminals)
@@ -66,4 +53,15 @@ python workload_simulation.py --scheduler-url http://127.0.0.1:9000 --scenario f
 # Compare all strategies
 python workload_simulation.py --scheduler-url http://127.0.0.1:9000 --scenario compare --output all_results.csv
 ```
+## Project Milestones
 
+| Week | Milestone | Status |
+|------|-----------|--------|
+| 1-2 | Team formation and project selection | Complete |
+| 3-4 | Project proposal submission | Complete |
+| 5-6 | GitHub setup, code implementation, simulations | Complete |
+| 6 | Progress Report 1 submission | Complete |
+| 7-8 | Azure deployment, Excel dashboard | In Progress |
+| 9 | Progress Report 2 submission | Planned |
+| 10-12 | Performance evaluation and comparison | Planned |
+| 13 | Final report and presentation | Planned |
