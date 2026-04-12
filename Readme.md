@@ -11,6 +11,30 @@ This project is a framework design and an evaluation of the distributed resource
 
 ## System Architecture
 
+```text
+Woolworths Online Platform (Client Requests)
+                    |
+                    v
+        +---------------------+
+        |   Central Scheduler  |  <- scheduler.py (Port 9000)
+        +----------+----------+
+                   |
+        +----------+----------+
+        v          v          v
+  +---------+ +---------+ +---------+
+  | worker-1| | worker-2| | worker-3|
+  | Port8001| | Port8002| | Port8003|
+  +---------+ +---------+ +---------+
+                   |
+        +----------v----------+
+        |    Azure Monitor     |
+        +----------+----------+
+                   |
+        +----------v----------+
+        |   Excel Dashboard    |
+        +---------------------+
+```
+
 ## Scheduling Strategies Implemented
 
 | Strategy | Description | Best For |
