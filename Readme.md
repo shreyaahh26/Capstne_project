@@ -1,3 +1,6 @@
+# Distributed Resource Allocation and Sharing System
+**COIT13236 – Cyber Security Project | CQUniversity | Term 1, 2026**
+
 # Project Overview
 This project is a framework design and an evaluation of the distributed resource allocation and sharing framework based on the operational needs of the Woolworths Group - a large scale Australian based e-commerce and retail site. The system is dynamically controlled to allocate tasks (modeled as customer orders and platform requests) across a number of worker nodes in varying scheduling policies, to recreate the behaviour of distributed systems in the real world (bursty traffic and node failures).
 
