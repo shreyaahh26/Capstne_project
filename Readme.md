@@ -9,7 +9,7 @@ This project is a framework design and an evaluation of the distributed resource
 | Kush | System Architect & Technical Lead | System design, Azure infrastructure, architecture diagrams |
 | Shamim | Lead Developer & Testing Lead | Code implementation, simulations, performance testing |
 
-# System Architecture
+## System Architecture
 
 ## Simulation Results Summary
 
