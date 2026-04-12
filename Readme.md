@@ -8,3 +8,27 @@ This project is a framework design and an evaluation of the distributed resource
 | Shreya Gopala | Project Manager & Quality Lead | Planning, coordination, documentation, Excel dashboard |
 | Kush | System Architect & Technical Lead | System design, Azure infrastructure, architecture diagrams |
 | Shamim | Lead Developer & Testing Lead | Code implementation, simulations, performance testing |
+
+# System Architecture
+
+Woolworths Online Platform (Client Requests)
+                    │
+                    ▼
+        ┌─────────────────────┐
+        │   Central Scheduler  │  ← scheduler.py (Port 9000)
+        └──────────┬──────────┘
+                   │
+        ┌──────────┼──────────┐
+        ▼          ▼          ▼
+  ┌──────────┐ ┌──────────┐ ┌──────────┐
+  │ worker-1  │ │ worker-2  │ │ worker-3  │
+  │ Port 8001 │ │ Port 8002 │ │ Port 8003 │
+  └──────────┘ └──────────┘ └──────────┘
+                   │
+        ┌──────────▼──────────┐
+        │    Azure Monitor     │
+        └──────────┬──────────┘
+                   │
+        ┌──────────▼──────────┐
+        │   Excel Dashboard    │
+        └─────────────────────┘
