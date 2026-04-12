@@ -15,7 +15,7 @@ This project is a framework design and an evaluation of the distributed resource
 ## System Architecture
 
 ```text
-Woolworths Online Platform (Client Requests)
+Woolworths Online Platform (Client Requests) 
                     |
                     v
         +---------------------+
