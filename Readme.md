@@ -13,7 +13,7 @@ This project is a framework design and an evaluation of the distributed resource
 | Shamim | Lead Developer & Testing Lead | Code implementation, simulations, performance testing |
 
 ## System Architecture
-
+ 
 ```text
 Woolworths Online Platform (Client Requests) 
                     |
