@@ -1,385 +1,321 @@
 """
-Central Scheduler Service
-COIT13236 – Distributed Resource Allocation Project
-Handles incoming tasks and distributes them to worker nodes
-using multiple scheduling strategies.
+COIT13236 - Distributed Resource Allocation System
+Queensland Rail IoT Sensor Data Processing
 
-Endpoints:
-- GET  /workers
-- GET  /health
-- POST /dispatch
-- POST /fail_node
-- POST /recover_node
+Distributed Node - Each node acts as BOTH scheduler AND worker
+No central scheduler - fully peer-to-peer distributed system
+Author: Shreya Gopala (Project Manager)
 """
 
-from __future__ import annotations
-
-import argparse
-import json
-import logging
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import uvicorn
+import requests
 import threading
 import time
-from datetime import datetime, timezone
-from http import HTTPStatus
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Dict, List, Optional
-from urllib import error, request
+import random
+import logging
+import csv
+import os
+import argparse
+from datetime import datetime
+from typing import Optional
+import json
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [SCHEDULER] %(message)s")
-LOGGER = logging.getLogger(__name__)
+# ── Logging Setup ──────────────────────────────────────────────────────────────
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
+logger = logging.getLogger(__name__)
 
+# ── FastAPI App ────────────────────────────────────────────────────────────────
+app = FastAPI(title="Queensland Rail Distributed Node")
 
-def utc_now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+# ── Node State ─────────────────────────────────────────────────────────────────
+class NodeState:
+    def __init__(self, node_id: str, port: int, peers: list):
+        self.node_id = node_id
+        self.port = port
+        self.peers = peers  # List of peer URLs
+        self.is_alive = True
+        self.current_load = 0.0  # CPU load percentage
+        self.tasks_completed = 0
+        self.tasks_failed = 0
+        self.total_latency = 0.0
+        self.lock = threading.Lock()
+        self.peer_loads = {}  # Cache of peer loads
+        self.results = []
 
+    @property
+    def avg_latency(self):
+        if self.tasks_completed == 0:
+            return 0.0
+        return self.total_latency / self.tasks_completed
 
-class Scheduler:
-    def __init__(self, worker_nodes: List[Dict[str, Any]], timeout_s: float = 5.0) -> None:
-        self.worker_nodes = worker_nodes
-        self.timeout_s = timeout_s
-        self._rr_index = 0
-        self._lock = threading.Lock()
+    @property
+    def throughput(self):
+        return self.tasks_completed
 
-    def _http_json(self, method: str, url: str, payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        data = None
-        headers = {"Content-Type": "application/json"}
-        if payload is not None:
-            data = json.dumps(payload).encode("utf-8")
-        req = request.Request(url, data=data, headers=headers, method=method)
-        with request.urlopen(req, timeout=self.timeout_s) as response:
-            return json.loads(response.read().decode("utf-8"))
+node_state: Optional[NodeState] = None
 
-    def _worker_base_url(self, worker: Dict[str, Any]) -> str:
-        return f"http://{worker['host']}:{worker['port']}"
+# ── Request/Response Models ────────────────────────────────────────────────────
+class Task(BaseModel):
+    task_id: str
+    task_type: str = "normal"
+    complexity: float = 0.1
+    strategy: str = "least_loaded"
+    source_node: str = ""
 
-    def _check_worker_health(self, worker: Dict[str, Any]) -> str:
-        if not worker.get("enabled", True):
-            worker["status"] = "DOWN"
-            return "DOWN"
-        try:
-            health = self._http_json("GET", f"{self._worker_base_url(worker)}/health")
-            worker["status"] = health.get("status", "UNKNOWN")
-            worker["is_alive"] = health.get("is_alive", False)
-            return worker["status"]
-        except Exception:
-            worker["status"] = "DOWN"
-            worker["is_alive"] = False
-            return "DOWN"
+class TaskResult(BaseModel):
+    task_id: str
+    status: str
+    worker_node: str
+    latency_s: float
+    strategy: str
 
-    def _fetch_worker_metrics(self, worker: Dict[str, Any]) -> Dict[str, Any]:
-        try:
-            metrics = self._http_json("GET", f"{self._worker_base_url(worker)}/metrics")
-            worker["load"] = metrics.get("current_load_pct", 0)
-            worker["task_count"] = metrics.get("tasks_completed", 0)
-            worker["status"] = metrics.get("health", "UNKNOWN")
-            worker["is_alive"] = metrics.get("is_alive", False)
-            return metrics
-        except Exception:
-            worker["status"] = "DOWN"
-            worker["is_alive"] = False
-            worker["load"] = 100
-            return {
-                "node_id": worker["id"],
-                "is_alive": False,
-                "health": "DOWN",
-                "current_load_pct": 100,
-                "tasks_completed": worker.get("task_count", 0),
-            }
-
-    def refresh_all_workers(self) -> List[Dict[str, Any]]:
-        snapshot = []
-        for worker in self.worker_nodes:
-            metrics = self._fetch_worker_metrics(worker)
-            snapshot.append(
-                {
-                    "id": worker["id"],
-                    "host": worker["host"],
-                    "port": worker["port"],
-                    "enabled": worker.get("enabled", True),
-                    "status": metrics.get("health", worker.get("status", "UNKNOWN")),
-                    "load": metrics.get("current_load_pct", worker.get("load", 0)),
-                    "tasks_completed": metrics.get("tasks_completed", worker.get("task_count", 0)),
-                }
-            )
-        return snapshot
-
-    def static_allocation(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        for worker in self.worker_nodes:
-            if self._check_worker_health(worker) != "DOWN":
-                return worker
-        raise RuntimeError("No available workers for static allocation")
-
-    def round_robin(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        with self._lock:
-            start_index = self._rr_index
-            for offset in range(len(self.worker_nodes)):
-                idx = (start_index + offset) % len(self.worker_nodes)
-                worker = self.worker_nodes[idx]
-                if self._check_worker_health(worker) != "DOWN":
-                    self._rr_index = idx + 1
-                    return worker
-        raise RuntimeError("No available workers for round robin")
-
-    def least_loaded(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        candidates = []
-        for worker in self.worker_nodes:
-            metrics = self._fetch_worker_metrics(worker)
-            if metrics.get("is_alive"):
-                candidates.append(worker)
-        if not candidates:
-            raise RuntimeError("No available workers for least-loaded scheduling")
-        return min(candidates, key=lambda w: (w.get("load", 100), w.get("task_count", 0)))
-
-    def fairness_based(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        candidates = []
-        for worker in self.worker_nodes:
-            metrics = self._fetch_worker_metrics(worker)
-            if metrics.get("is_alive"):
-                candidates.append(worker)
-        if not candidates:
-            raise RuntimeError("No available workers for fairness-based scheduling")
-        return min(candidates, key=lambda w: (w.get("task_count", 0), w.get("load", 100)))
-
-    def pick_worker(self, task: Dict[str, Any], strategy: str) -> Dict[str, Any]:
-        strategies = {
-            "static": self.static_allocation,
-            "round_robin": self.round_robin,
-            "least_loaded": self.least_loaded,
-            "fairness": self.fairness_based,
-        }
-        if strategy not in strategies:
-            raise ValueError(f"Unknown strategy: {strategy}")
-        return strategies[strategy](task)
-
-    def dispatch_task(self, task: Dict[str, Any], strategy: str = "round_robin") -> Dict[str, Any]:
-        start = time.perf_counter()
-        tried_ids: List[str] = []
-        last_error = ""
-
-        for _ in range(len(self.worker_nodes)):
-            worker = self.pick_worker(task, strategy)
-            if worker["id"] in tried_ids:
-                continue
-            tried_ids.append(worker["id"])
-
-            try:
-                result = self._http_json("POST", f"{self._worker_base_url(worker)}/execute", task)
-                worker["load"] = result.get("load_pct", worker.get("load", 0))
-                worker["task_count"] = worker.get("task_count", 0) + (1 if result.get("status") == "completed" else 0)
-                elapsed = time.perf_counter() - start
-                response = {
-                    "task_id": result.get("task_id", task.get("id")),
-                    "type": result.get("type", task.get("type", "normal")),
-                    "complexity": result.get("complexity", task.get("complexity", 0.0)),
-                    "worker": result.get("node_id", worker["id"]),
-                    "strategy": strategy,
-                    "latency_s": result.get("latency_s", round(elapsed, 4)),
-                    "status": result.get("status", "completed"),
-                    "reason": result.get("reason", ""),
-                    "timestamp": result.get("timestamp", utc_now_iso()),
-                }
-                LOGGER.info(
-                    "Task %s -> %s via %s | status=%s | latency=%ss",
-                    response["task_id"],
-                    response["worker"],
-                    strategy,
-                    response["status"],
-                    response["latency_s"],
-                )
-                return response
-            except error.HTTPError as exc:
-                last_error = f"HTTP {exc.code} from {worker['id']}"
-                worker["status"] = "DOWN"
-                worker["is_alive"] = False
-            except Exception as exc:  # noqa: BLE001
-                last_error = str(exc)
-                worker["status"] = "DOWN"
-                worker["is_alive"] = False
-
-        return {
-            "task_id": task.get("id", "unknown-task"),
-            "type": task.get("type", "normal"),
-            "complexity": task.get("complexity", 0.0),
-            "worker": "",
-            "strategy": strategy,
-            "latency_s": round(time.perf_counter() - start, 4),
-            "status": "failed",
-            "reason": f"No available workers. Last error: {last_error}",
-            "timestamp": utc_now_iso(),
-        }
-
-    def simulate_node_failure(self, worker_id: str) -> Dict[str, Any]:
-        for worker in self.worker_nodes:
-            if worker["id"] == worker_id:
-                worker["enabled"] = False
+# ── Gossip Protocol — Share Load with Peers ────────────────────────────────────
+def gossip_load():
+    """Periodically share this node's load with all peers"""
+    while True:
+        if node_state and node_state.is_alive:
+            for peer_url in node_state.peers:
                 try:
-                    self._http_json("POST", f"{self._worker_base_url(worker)}/fail", {})
-                except Exception:
+                    requests.post(
+                        f"{peer_url}/gossip",
+                        json={
+                            "node_id": node_state.node_id,
+                            "load": node_state.current_load,
+                            "tasks_completed": node_state.tasks_completed,
+                            "is_alive": node_state.is_alive
+                        },
+                        timeout=2
+                    )
+                except:
                     pass
-                worker["status"] = "DOWN"
-                return {"node_id": worker_id, "status": "DOWN", "timestamp": utc_now_iso()}
-        raise ValueError(f"Worker {worker_id} not found")
+        time.sleep(3)
 
-    def recover_node(self, worker_id: str) -> Dict[str, Any]:
-        for worker in self.worker_nodes:
-            if worker["id"] == worker_id:
-                worker["enabled"] = True
-                self._http_json("POST", f"{self._worker_base_url(worker)}/recover", {})
-                worker["status"] = "HEALTHY"
-                worker["load"] = 0
-                return {"node_id": worker_id, "status": "HEALTHY", "timestamp": utc_now_iso()}
-        raise ValueError(f"Worker {worker_id} not found")
+# ── Scheduling Strategies ──────────────────────────────────────────────────────
+def select_worker(strategy: str) -> str:
+    """Select the best node to handle a task based on strategy"""
 
+    available_peers = {}
+    for peer_url in node_state.peers:
+        peer_load = node_state.peer_loads.get(peer_url, {})
+        if peer_load.get("is_alive", True):
+            available_peers[peer_url] = peer_load
 
-class SchedulerRequestHandler(BaseHTTPRequestHandler):
-    scheduler: Scheduler | None = None
+    # Include self as option
+    all_nodes = {f"self": {"load": node_state.current_load, "tasks_completed": node_state.tasks_completed}}
+    all_nodes.update(available_peers)
 
-    def _send_json(self, payload: Dict[str, Any] | List[Dict[str, Any]], status: int = HTTPStatus.OK) -> None:
-        body = json.dumps(payload).encode("utf-8")
-        self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+    if not all_nodes:
+        return "self"
 
-    def _read_json_body(self) -> Dict[str, Any]:
-        length = int(self.headers.get("Content-Length", "0"))
-        raw = self.rfile.read(length) if length else b"{}"
-        if not raw:
-            return {}
-        try:
-            return json.loads(raw.decode("utf-8"))
-        except json.JSONDecodeError:
-            raise ValueError("Invalid JSON payload")
+    if strategy == "static":
+        # Always handle locally
+        return "self"
 
-    def log_message(self, fmt: str, *args: Any) -> None:
-        LOGGER.info("%s - %s", self.address_string(), fmt % args)
+    elif strategy == "round_robin":
+        # Rotate through all nodes
+        all_urls = ["self"] + list(available_peers.keys())
+        idx = node_state.tasks_completed % len(all_urls)
+        return all_urls[idx]
 
-    def do_GET(self) -> None:  # noqa: N802
-        scheduler = self.scheduler
-        if scheduler is None:
-            self._send_json({"error": "Scheduler not initialised"}, HTTPStatus.INTERNAL_SERVER_ERROR)
-            return
+    elif strategy == "least_loaded":
+        # Send to least loaded node
+        min_load = node_state.current_load
+        best = "self"
+        for peer_url, peer_data in available_peers.items():
+            peer_load = peer_data.get("load", 100)
+            if peer_load < min_load:
+                min_load = peer_load
+                best = peer_url
+        return best
 
-        if self.path == "/workers":
-            self._send_json(scheduler.refresh_all_workers())
-            return
+    elif strategy == "fairness":
+        # Send to node with fewest completed tasks
+        min_tasks = node_state.tasks_completed
+        best = "self"
+        for peer_url, peer_data in available_peers.items():
+            peer_tasks = peer_data.get("tasks_completed", 999999)
+            if peer_tasks < min_tasks:
+                min_tasks = peer_tasks
+                best = peer_url
+        return best
 
-        if self.path == "/health":
-            workers = scheduler.refresh_all_workers()
-            healthy = sum(1 for w in workers if w.get("status") != "DOWN")
-            self._send_json(
-                {
-                    "service": "scheduler",
-                    "status": "HEALTHY" if healthy else "DEGRADED",
-                    "available_workers": healthy,
-                    "total_workers": len(workers),
-                    "timestamp": utc_now_iso(),
-                }
-            )
-            return
+    return "self"
 
-        self._send_json({"error": f"Unknown path: {self.path}"}, HTTPStatus.NOT_FOUND)
+# ── Task Execution ─────────────────────────────────────────────────────────────
+def execute_task_locally(task: Task) -> TaskResult:
+    """Execute a task on this node"""
+    start_time = time.time()
 
-    def do_POST(self) -> None:  # noqa: N802
-        scheduler = self.scheduler
-        if scheduler is None:
-            self._send_json({"error": "Scheduler not initialised"}, HTTPStatus.INTERNAL_SERVER_ERROR)
-            return
+    with node_state.lock:
+        node_state.current_load = min(100, node_state.current_load + task.complexity * 30)
 
-        try:
-            payload = self._read_json_body()
-        except ValueError as exc:
-            self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
-            return
+    # Simulate IoT sensor data processing
+    time.sleep(task.complexity * random.uniform(0.05, 0.15))
 
-        if self.path == "/dispatch":
-            task = payload.get("task", payload)
-            strategy = payload.get("strategy", "round_robin")
-            result = scheduler.dispatch_task(task, strategy)
-            status = HTTPStatus.OK if result.get("status") == "completed" else HTTPStatus.SERVICE_UNAVAILABLE
-            self._send_json(result, status)
-            return
+    with node_state.lock:
+        node_state.current_load = max(0, node_state.current_load - task.complexity * 30)
+        node_state.tasks_completed += 1
+        latency = time.time() - start_time
+        node_state.total_latency += latency
 
-        if self.path == "/fail_node":
-            worker_id = payload.get("worker_id", "")
-            try:
-                result = scheduler.simulate_node_failure(worker_id)
-                self._send_json(result)
-            except ValueError as exc:
-                self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
-            return
-
-        if self.path == "/recover_node":
-            worker_id = payload.get("worker_id", "")
-            try:
-                result = scheduler.recover_node(worker_id)
-                self._send_json(result)
-            except ValueError as exc:
-                self._send_json({"error": str(exc)}, HTTPStatus.BAD_REQUEST)
-            return
-
-        self._send_json({"error": f"Unknown path: {self.path}"}, HTTPStatus.NOT_FOUND)
-
-
-def parse_worker(worker_str: str) -> Dict[str, Any]:
-    try:
-        node_id, host, port = worker_str.split(":", 2)
-        return {
-            "id": node_id,
-            "host": host,
-            "port": int(port),
-            "load": 0,
-            "task_count": 0,
-            "status": "UNKNOWN",
-            "is_alive": False,
-            "enabled": True,
-        }
-    except ValueError as exc:
-        raise argparse.ArgumentTypeError(
-            "Workers must be in the format worker-id:host:port"
-        ) from exc
-
-
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Central Scheduler Service")
-    parser.add_argument("--host", default="0.0.0.0", help="Bind host")
-    parser.add_argument("--port", type=int, default=9000, help="Port to listen on")
-    parser.add_argument(
-        "--worker",
-        action="append",
-        type=parse_worker,
-        dest="workers",
-        help="Worker definition in the format worker-id:host:port. Can be repeated.",
+    result = TaskResult(
+        task_id=task.task_id,
+        status="completed",
+        worker_node=node_state.node_id,
+        latency_s=round(latency, 3),
+        strategy=task.strategy
     )
-    parser.add_argument("--timeout", type=float, default=5.0, help="Worker request timeout in seconds")
-    return parser.parse_args()
 
+    logger.info(f"Task {task.task_id} completed on {node_state.node_id} | latency={latency:.3f}s | load={node_state.current_load:.0f}%")
 
-def default_workers() -> List[Dict[str, Any]]:
-    return [
-        {"id": "worker-1", "host": "127.0.0.1", "port": 8001, "load": 0, "task_count": 0, "status": "UNKNOWN", "is_alive": False, "enabled": True},
-        {"id": "worker-2", "host": "127.0.0.1", "port": 8002, "load": 0, "task_count": 0, "status": "UNKNOWN", "is_alive": False, "enabled": True},
-        {"id": "worker-3", "host": "127.0.0.1", "port": 8003, "load": 0, "task_count": 0, "status": "UNKNOWN", "is_alive": False, "enabled": True},
-    ]
+    # Save result
+    node_state.results.append({
+        "task_id": task.task_id,
+        "type": task.task_type,
+        "complexity": task.complexity,
+        "worker": node_state.node_id,
+        "strategy": task.strategy,
+        "latency_s": round(latency, 3),
+        "status": "completed",
+        "timestamp": datetime.utcnow().isoformat()
+    })
 
+    return result
 
-def main() -> None:
-    args = parse_args()
-    workers = args.workers if args.workers else default_workers()
-    scheduler = Scheduler(worker_nodes=workers, timeout_s=args.timeout)
-    SchedulerRequestHandler.scheduler = scheduler
+# ── API Endpoints ──────────────────────────────────────────────────────────────
+@app.get("/health")
+def health():
+    """Health check endpoint"""
+    return {
+        "node_id": node_state.node_id,
+        "status": "alive" if node_state.is_alive else "failed",
+        "load": round(node_state.current_load, 2),
+        "tasks_completed": node_state.tasks_completed,
+        "peers": len(node_state.peers)
+    }
 
-    server = ThreadingHTTPServer((args.host, args.port), SchedulerRequestHandler)
-    LOGGER.info("Scheduler listening on %s:%s", args.host, args.port)
-    LOGGER.info("Configured workers: %s", ", ".join(f"{w['id']}@{w['host']}:{w['port']}" for w in workers))
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        LOGGER.info("Scheduler shutting down")
-    finally:
-        server.server_close()
+@app.get("/metrics")
+def metrics():
+    """Performance metrics endpoint"""
+    return {
+        "node_id": node_state.node_id,
+        "is_alive": node_state.is_alive,
+        "current_load": round(node_state.current_load, 2),
+        "tasks_completed": node_state.tasks_completed,
+        "tasks_failed": node_state.tasks_failed,
+        "avg_latency_s": round(node_state.avg_latency, 3),
+        "throughput": node_state.throughput,
+        "peer_count": len(node_state.peers),
+        "peer_loads": node_state.peer_loads
+    }
 
+@app.post("/dispatch")
+def dispatch_task(task: Task):
+    """Receive a task and decide where to execute it"""
+    if not node_state.is_alive:
+        raise HTTPException(status_code=503, detail=f"Node {node_state.node_id} is down")
+
+    # Select best worker using strategy
+    selected = select_worker(task.strategy)
+
+    logger.info(f"[{node_state.node_id}] Task {task.task_id} → {selected} via {task.strategy}")
+
+    if selected == "self":
+        # Execute locally
+        return execute_task_locally(task)
+    else:
+        # Forward to selected peer
+        try:
+            response = requests.post(
+                f"{selected}/execute",
+                json=task.dict(),
+                timeout=10
+            )
+            return response.json()
+        except Exception as e:
+            logger.warning(f"Peer {selected} failed — executing locally: {e}")
+            return execute_task_locally(task)
+
+@app.post("/execute")
+def execute_task(task: Task):
+    """Directly execute a task on this node"""
+    if not node_state.is_alive:
+        raise HTTPException(status_code=503, detail=f"Node {node_state.node_id} is down")
+    return execute_task_locally(task)
+
+@app.post("/gossip")
+def receive_gossip(data: dict):
+    """Receive load information from a peer"""
+    peer_id = data.get("node_id")
+    # Find peer URL from node_id
+    for peer_url in node_state.peers:
+        if peer_id in peer_url or data.get("node_id") == peer_id:
+            node_state.peer_loads[peer_url] = data
+    return {"status": "received"}
+
+@app.post("/fail")
+def simulate_failure():
+    """Simulate node failure"""
+    node_state.is_alive = False
+    logger.warning(f"Node {node_state.node_id} has FAILED — marked unavailable")
+    return {"status": "failed", "node_id": node_state.node_id}
+
+@app.post("/recover")
+def simulate_recovery():
+    """Simulate node recovery"""
+    node_state.is_alive = True
+    node_state.current_load = 0.0
+    logger.info(f"Node {node_state.node_id} RECOVERED — back online")
+    return {"status": "recovered", "node_id": node_state.node_id}
+
+@app.get("/results")
+def get_results():
+    """Get all task results from this node"""
+    return node_state.results
+
+@app.post("/save_results")
+def save_results(filename: str = "results.csv"):
+    """Save results to CSV file"""
+    if not node_state.results:
+        return {"status": "no results to save"}
+
+    filepath = f"/home/azureuser/{filename}"
+    with open(filepath, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=node_state.results[0].keys())
+        writer.writeheader()
+        writer.writerows(node_state.results)
+
+    return {"status": "saved", "filepath": filepath, "count": len(node_state.results)}
+
+# ── Startup ────────────────────────────────────────────────────────────────────
+def start_node(node_id: str, port: int, peers: list):
+    global node_state
+    node_state = NodeState(node_id=node_id, port=port, peers=peers)
+
+    # Start gossip thread
+    gossip_thread = threading.Thread(target=gossip_load, daemon=True)
+    gossip_thread.start()
+
+    logger.info(f"Starting Queensland Rail Distributed Node: {node_id}")
+    logger.info(f"Port: {port}")
+    logger.info(f"Peers: {peers}")
+    logger.info(f"Endpoints: /health /metrics /dispatch /execute /gossip /fail /recover")
+
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="warning")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Queensland Rail Distributed Node")
+    parser.add_argument("--id", required=True, help="Node ID e.g. node-1")
+    parser.add_argument("--port", type=int, required=True, help="Port to listen on")
+    parser.add_argument("--peers", default="", help="Comma separated peer URLs e.g. http://IP:8002,http://IP:8003")
+    args = parser.parse_args()
+
+    peers = [p.strip() for p in args.peers.split(",") if p.strip()]
+    start_node(args.id, args.port, peers)
+   
+   
