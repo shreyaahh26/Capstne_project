@@ -72,6 +72,7 @@ Each node acts as both scheduler AND worker. Nodes communicate via gossip protoc
 scp distributed_node.py azureuser@20.92.56.192:/home/azureuser/
 scp distributed_node.py azureuser@20.213.58.22:/home/azureuser/
 scp distributed_node.py azureuser@20.58.185.74:/home/azureuser/
+scp distributed_node.py azureuser@20.24.209.147:/home/azureuser/
 ```
 
 ### Step 2 — Start each node on its VM
@@ -85,7 +86,10 @@ python3 distributed_node.py --id node-2 --port 8002 --peers http://20.92.56.192:
 
 # On worker-vm-3
 python3 distributed_node.py --id node-3 --port 8003 --peers http://20.92.56.192:8001,http://20.213.58.22:8002
-```
+
+# On worker-vm-4
+python3 distributed_node.py --id node-4 --port 8004 --peers http://20.92.56.192:8001,http://20.213.58.22:8002,http://20.58.185.74:8003
+---
 
 ### Step 3 — Send tasks to any node
 
