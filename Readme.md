@@ -16,33 +16,7 @@ This project designs and evaluates a fully distributed resource allocation frame
 
 Each node acts as both scheduler AND worker. Nodes communicate via gossip protocol sharing load information every 3 seconds.
 
-```text
-Queensland Rail IoT Sensors (Driverless Trains)
-                    |
-                    v
-        +----------------------+
-        |    Load Balancer     |
-        +----------+-----------+
-                   |
-     +-------------+-------------+
-     v             v             v
-+--------+    +--------+    +--------+    +--------+
-| Node 1 |<-->| Node 2 |<-->| Node 3 |<-->| Node 4 |
-|Port8001|    |Port8002|    |Port8003|    |Port8004|
-+--------+    +--------+    +--------+    +--------+
-     ^             ^             ^             ^
-     |_____________|_____________|_____________|
-              Gossip Network (Peer-to-Peer)
-                         |
-              +----------v----------+
-              |      Prometheus     |
-              +----------+----------+
-                         |
-              +----------v----------+
-              |   Grafana Dashboard  |
-              +---------------------+
-```
-
+          
 ## Azure Infrastructure
 | VM Name | Role | Public IP | Port | Status |
 |---------|------|-----------|------|--------|
