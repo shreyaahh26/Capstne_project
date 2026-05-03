@@ -24,7 +24,7 @@ Each node acts as both scheduler AND worker. Nodes communicate via gossip protoc
 | worker-vm-1 | Distributed Node 1 | 20.92.56.192 | 8001 | Running |
 | worker-vm-2 | Distributed Node 2 | 20.213.58.22 | 8002 | Running |
 | worker-vm-3 | Distributed Node 3 | 20.58.185.74 | 8003 | Running |
-| worker-vm-4 | Distributed Node 4 | TBC | 8004 | In Progress |
+| worker-vm-4 | Distributed Node 4 | 20.24.209.147 | 8004 | In Progress |
 | scheduler-vm | Prometheus + Grafana | 20.190.108.20 | 3000/9090 | Running |
 
 ## Scheduling Strategies Implemented
