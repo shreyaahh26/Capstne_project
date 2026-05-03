@@ -76,32 +76,25 @@ scp distributed_node.py azureuser@20.24.209.147:/home/azureuser/
 ```
 
 ### Step 2 - Start each node on its VM
-
 ```bash
 # On worker-vm-1
 python3 distributed_node.py --id node-1 --port 8001 --peers http://20.213.58.22:8002,http://20.58.185.74:8003
-
 # On worker-vm-2
 python3 distributed_node.py --id node-2 --port 8002 --peers http://20.92.56.192:8001,http://20.58.185.74:8003
-
 # On worker-vm-3
 python3 distributed_node.py --id node-3 --port 8003 --peers http://20.92.56.192:8001,http://20.213.58.22:8002
-
 # On worker-vm-4
 python3 distributed_node.py --id node-4 --port 8004 --peers http://20.92.56.192:8001,http://20.213.58.22:8002,http://20.58.185.74:8003
+```
 
 ### Step 3 - Send tasks to any node
-
 ```bash
 # Normal workload
 curl -X POST http://20.92.56.192:8001/dispatch -H "Content-Type: application/json" -d '{"task_id":"t1","task_type":"normal","complexity":0.1,"strategy":"round_robin"}'
-
 # Check metrics
 curl http://20.92.56.192:8001/metrics
-
 # Simulate node failure
 curl -X POST http://20.213.58.22:8002/fail
-
 # Recover node
 curl -X POST http://20.213.58.22:8002/recover
 ```
