@@ -12,7 +12,8 @@ This project designs and evaluates a fully distributed resource allocation frame
 | Shamim | Lead Developer & Testing Lead | Code enhancement, simulations, FastAPI, performance testing |
 
 ## System Architecture
-**Distributed system**
+
+![Queensland Rail Distributed System Architecture](https://raw.githubusercontent.com/shreyaahh26/Capstne_project/main/Distributed-system_architecture.png)
 
 Each node acts as both scheduler AND worker. Nodes communicate via gossip protocol sharing load information every 3 seconds.
 
