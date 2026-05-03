@@ -1,5 +1,5 @@
 # Distributed Resource Allocation and Sharing System
-**COIT13236 – Cyber Security Project | CQUniversity | Term 1, 2026**
+**COIT13236 - Cyber Security Project | CQUniversity | Term 1, 2026**
 
 # Project Overview
 This project designs and evaluates a fully distributed resource allocation framework based on the operational needs of Queensland Rail - Australia's largest rail network operator developing driverless train technology. The system dynamically allocates IoT sensor data streams from driverless trains across multiple distributed worker nodes using different scheduling strategies, ensuring real-time safety-critical data is processed efficiently even during peak traffic periods and node failures.
@@ -65,7 +65,7 @@ Each node acts as both scheduler AND worker. Nodes communicate via gossip protoc
 | Burst (Least Loaded) | 0.254s | 3.94 tasks/s | 20/20 |
 | Node Failure (Round Robin) | 0.110s | 9.12 tasks/s | 10/10 |
 
-## How to Run — Distributed System
+## How to Run - Distributed System
 ### Step 1 - Deploy distributed_node.py to each Azure VM
 
 ```bash
