@@ -12,7 +12,7 @@ This project designs and evaluates a fully distributed resource allocation frame
 | Shamim | Lead Developer & Testing Lead | Code enhancement, simulations, FastAPI, performance testing |
 
 ## System Architecture
-**Fully Distributed — No Central Scheduler**
+**Distributed system**
 
 Each node acts as both scheduler AND worker. Nodes communicate via gossip protocol sharing load information every 3 seconds.
 
