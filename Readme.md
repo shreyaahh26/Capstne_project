@@ -66,7 +66,7 @@ Each node acts as both scheduler AND worker. Nodes communicate via gossip protoc
 | Node Failure (Round Robin) | 0.110s | 9.12 tasks/s | 10/10 |
 
 ## How to Run — Distributed System
-### Step 1 — Deploy distributed_node.py to each Azure VM
+### Step 1 - Deploy distributed_node.py to each Azure VM
 
 ```bash
 scp distributed_node.py azureuser@20.92.56.192:/home/azureuser/
@@ -75,7 +75,7 @@ scp distributed_node.py azureuser@20.58.185.74:/home/azureuser/
 scp distributed_node.py azureuser@20.24.209.147:/home/azureuser/
 ```
 
-### Step 2 — Start each node on its VM
+### Step 2 - Start each node on its VM
 
 ```bash
 # On worker-vm-1
@@ -89,9 +89,8 @@ python3 distributed_node.py --id node-3 --port 8003 --peers http://20.92.56.192:
 
 # On worker-vm-4
 python3 distributed_node.py --id node-4 --port 8004 --peers http://20.92.56.192:8001,http://20.213.58.22:8002,http://20.58.185.74:8003
----
 
-### Step 3 — Send tasks to any node
+### Step 3 - Send tasks to any node
 
 ```bash
 # Normal workload
