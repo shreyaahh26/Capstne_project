@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'distributed-nodes'
+    metrics_path: /prometheus-metrics
+    static_configs:
+      - targets:
+          - '20.92.56.192:8001'
+          - '20.213.58.22:8002'
+          - '20.58.185.74:8003'
+          - '20.24.209.147:8004'
