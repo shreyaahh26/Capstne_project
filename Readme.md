@@ -2,7 +2,7 @@
 **COIT13236 – Cyber Security Project | CQUniversity | Term 1, 2026**
 
 # Project Overview
-This project designs and evaluates a fully distributed resource allocation framework based on the operational needs of Queensland Rail — Australia's largest rail network operator developing driverless train technology. The system dynamically allocates IoT sensor data streams from driverless trains across multiple distributed worker nodes using different scheduling strategies, ensuring real-time safety-critical data is processed efficiently even during peak traffic periods and node failures.
+This project designs and evaluates a fully distributed resource allocation framework based on the operational needs of Queensland Rail - Australia's largest rail network operator developing driverless train technology. The system dynamically allocates IoT sensor data streams from driverless trains across multiple distributed worker nodes using different scheduling strategies, ensuring real-time safety-critical data is processed efficiently even during peak traffic periods and node failures.
 
 ## Team Members
 | Name | Role | Responsibility |
