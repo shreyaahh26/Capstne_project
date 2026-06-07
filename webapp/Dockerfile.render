@@ -1,0 +1,31 @@
+# Stage 1: Build React Frontend
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app
+# Copy npm files and configs
+COPY package*.json tsconfig.json vite.config.ts ./
+RUN npm ci
+# Copy source code and build
+COPY ./src ./src
+COPY ./index.html ./index.html
+RUN npm run build
+
+# Stage 2: Python Backend Setup & Serve
+FROM python:3.10-slim
+WORKDIR /app
+
+# Install python dependencies
+COPY backend/requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy Backend codebase
+COPY backend ./backend
+
+# Copy built frontend assets into the dist folder so FastAPI can serve them
+COPY --from=frontend-builder /app/dist ./dist
+
+# Expose port (Render sets $PORT automatically, but we can default to 10000)
+ENV PORT=10000
+EXPOSE $PORT
+
+# Start the unified backend & frontend server
+CMD sh -c "uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT"

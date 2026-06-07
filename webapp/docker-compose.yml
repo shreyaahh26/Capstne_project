@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # 1. Gateway and User Interface - Serving SPA, proxying WebSocket & REST
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
+    environment:
+      - NODE_ENV=production
+    networks:
+      - cluster-subnet
+
+  # 2. Advanced Gossip-Mesh & Machine-Learning Scheduling Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - ENV=production
+      - BIND_HOST=0.0.0.0
+      - BIND_PORT=9000
+      - PROJECT_NAME=Distributed Resource Allocation Engine
+      - GOSSIP_INTERVAL=3.0
+      - PEER_TIMEOUT=10.0
+      - PEER_NODES=http://20.92.56.192:8001,http://20.213.58.22:8002,http://20.58.185.74:8003,http://20.24.209.147:8004
+      - CSV_OUTPUT_PATH=/home/azureuser/simulation_results.csv
+      # Azure service connection details
+      - AZURE_TENANT_ID=${AZURE_TENANT_ID:-7b41c6d4-c4f7-4866-9ea8-7114764b0f1e}
+      - AZURE_CLIENT_ID=${AZURE_CLIENT_ID:-3cca09dd-71ae-47c5-83b7-51fb84333316}
+      - AZURE_CLIENT_SECRET=${AZURE_CLIENT_SECRET}
+      - AZURE_RESOURCE_GROUP=${AZURE_RESOURCE_GROUP:-distributed-system-rg}
+      - AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID:-ff615065-f3b1-4075-94f7-2393933e9ec2}
+      # Host credentials for secure remote execution tasks
+      - VM_SSH_USERNAME=${VM_SSH_USERNAME:-azureuser}
+      - VM_SSH_PASSWORD=${VM_SSH_PASSWORD}
+      - VM_SSH_PRIVATE_KEY_PATH=${VM_SSH_PRIVATE_KEY_PATH}
+    volumes:
+      - ledger-storage:/home/azureuser
+    restart: always
+    networks:
+      - cluster-subnet
+
+  # 3. Observability - Prometheus scraping server
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    volumes:
+      - ./deployment/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    restart: always
+    networks:
+      - cluster-subnet
+
+  # 4. Metrics Dashboard - Grafana server (Auto-bootstrapping datasource & dashboards)
+  grafana:
+    image: grafana/grafana-oss:10.1.2
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+    volumes:
+      - ./deployment/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deployment/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    restart: always
+    networks:
+      - cluster-subnet
+
+volumes:
+  ledger-storage:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  cluster-subnet:
+    driver: bridge

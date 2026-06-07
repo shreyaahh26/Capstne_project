@@ -1,0 +1,15 @@
+global:
+  scrape_interval: 5s       # Collect gossip & queue loads regularly for high-fidelity dashboards
+  evaluation_interval: 5s   # Run trigger alarms at strict intervals
+
+scrape_configs:
+  # Self metrics collection
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Real-time distributed scheduler clustering telemetry endpoints
+  - job_name: 'distributed-scheduler-backend'
+    metrics_path: '/api/v1/metrics'
+    static_configs:
+      - targets: ['backend:9000']

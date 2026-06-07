@@ -1,0 +1,6 @@
+{
+  "name": "Distributed Load Balancing Console",
+  "description": "An interactive distributed systems dashboard mapping real-time resource allocation, gossip topology, and predictive AI load balancing across virtual machines.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
