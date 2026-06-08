@@ -4,7 +4,7 @@ Queensland Rail IoT Sensor Data Processing
 
 Each node acts as both scheduler and worker.
 Includes FastAPI, gossip-based peer communication, scheduling strategies,
-task execution, failure simulation, result saving, and Prometheus metrics.
+task execution, failure simulation, result saving, and Prometheus metrics. 
 """
 
 from fastapi import FastAPI, HTTPException, Response
